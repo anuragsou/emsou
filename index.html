@@ -74,11 +74,11 @@
           </div>
         </div>
 
-        <nav class="nav-pills" aria-label="Primary">
-          <a class="nav-pill active" href="#overview">Overview</a>
-          <a class="nav-pill" href="#roster">Roster</a>
-          <a class="nav-pill" href="#editor">Editor</a>
-          <a class="nav-pill" href="#signals">Signals</a>
+        <nav class="nav-pills" id="primary-nav" aria-label="Primary">
+          <button class="nav-pill active" type="button" data-page="dashboard">Dashboard</button>
+          <button class="nav-pill" type="button" data-page="employees">Employees</button>
+          <button class="nav-pill" type="button" data-page="management">Manage</button>
+          <button class="nav-pill" type="button" data-page="signals">Signals</button>
         </nav>
 
         <div class="header-actions">
@@ -91,260 +91,474 @@
         </div>
       </header>
 
-      <section class="hero glass-panel" id="overview">
-        <div class="hero-copy">
-          <span class="eyebrow">Smart Workforce Control</span>
-          <h3>Track who is working, on leave, excelling, slipping, or burning out from one modern control room.</h3>
-          <p>
-            EMSOU gives managers one clean view for employee status, leave tracking, performance,
-            smart decision support, and local summaries that stay inside the browser.
-          </p>
-
-          <div class="hero-actions">
-            <button class="primary-btn" id="new-employee-button" type="button">New Employee</button>
-            <button class="ghost-btn" id="focus-retention" type="button">Retention Pulse</button>
-            <button class="ghost-btn" id="focus-delivery" type="button">Delivery Health</button>
-          </div>
-
-          <div class="hero-badges">
-            <span class="badge-chip">Persistent employee DB</span>
-            <span class="badge-chip">Secure login</span>
-            <span class="badge-chip">Smart local summaries</span>
-            <span class="badge-chip">Decision queue</span>
-            <span class="badge-chip">Audit history</span>
-          </div>
-        </div>
-
-        <div class="hero-console">
-          <div class="section-heading compact">
-            <div>
-              <span class="eyebrow">Smart Summary Console</span>
-              <h3>Ask for leave, submissions, promotions, or intervention summaries</h3>
-            </div>
-            <span class="live-pill" id="local-ai-pill">Built in</span>
-          </div>
-
-          <form class="ai-form" id="ai-form">
-            <label for="ai-query">Try: who is on leave, who deserves a hike, who needs attention, show submission status</label>
-            <div class="query-row">
-              <input id="ai-query" name="ai-query" type="text" placeholder="Ask EMSOU what is happening right now">
-              <button class="primary-btn" type="submit" id="ai-submit">Run Insight</button>
-            </div>
-          </form>
-
-          <div class="suggestion-row" id="suggestion-row"></div>
-
-          <div class="console-output">
-            <div class="output-top">
-              <span class="output-label">Smart Summary</span>
-              <span class="pill-soft" id="ai-provider-label">Built-in intelligence</span>
-            </div>
-            <p id="ai-response"></p>
-          </div>
-        </div>
-      </section>
-
       <section class="banner glass-panel">
         <p id="flash-message">Signed in successfully.</p>
       </section>
 
-      <section class="metrics-grid" id="metrics-grid"></section>
+      <div class="page-view-stack">
+        <section class="page-view" data-page-view="dashboard">
+          <section class="hero glass-panel">
+            <div class="hero-copy">
+              <span class="eyebrow">Smart Workforce Control</span>
+              <h3>Track who is working, on leave, excelling, slipping, or burning out from one modern control room.</h3>
+              <p>
+                EMSOU gives managers one clean view for employee status, leave tracking, performance,
+                smart decision support, and local summaries that stay inside the browser.
+              </p>
 
-      <section class="main-grid" id="roster">
-        <article class="glass-panel panel roster-panel">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">Live Roster</span>
-              <h3>Persistent employee records</h3>
+              <div class="hero-actions">
+                <button class="primary-btn" id="new-employee-button" type="button">Create Employee</button>
+                <button class="ghost-btn" id="focus-retention" type="button">Retention Pulse</button>
+                <button class="ghost-btn" id="focus-delivery" type="button">Delivery Health</button>
+              </div>
+
+              <div class="hero-badges">
+                <span class="badge-chip">Persistent employee DB</span>
+                <span class="badge-chip">Secure login</span>
+                <span class="badge-chip">Smart local summaries</span>
+                <span class="badge-chip">Decision queue</span>
+                <span class="badge-chip">Audit history</span>
+              </div>
             </div>
-            <div class="header-actions compact-actions">
+
+            <div class="hero-console">
+              <div class="section-heading compact">
+                <div>
+                  <span class="eyebrow">Smart Summary Console</span>
+                  <h3>Ask for leave, submissions, promotions, or intervention summaries</h3>
+                </div>
+                <span class="live-pill" id="local-ai-pill">Built in</span>
+              </div>
+
+              <form class="ai-form" id="ai-form">
+                <label for="ai-query">Try: who is on leave, who deserves a hike, who needs attention, show submission status</label>
+                <div class="query-row">
+                  <input id="ai-query" name="ai-query" type="text" placeholder="Ask EMSOU what is happening right now">
+                  <button class="primary-btn" type="submit" id="ai-submit">Run Insight</button>
+                </div>
+              </form>
+
+              <div class="suggestion-row" id="suggestion-row"></div>
+
+              <div class="console-output">
+                <div class="output-top">
+                  <span class="output-label">Smart Summary</span>
+                  <span class="pill-soft" id="ai-provider-label">Built-in intelligence</span>
+                </div>
+                <p id="ai-response"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="metrics-grid" id="metrics-grid"></section>
+        </section>
+
+        <section class="page-view hidden" data-page-view="employees">
+          <section class="page-intro glass-panel">
+            <div class="page-intro-copy">
+              <span class="eyebrow">Employee Workspace</span>
+              <h3>Read, create, update, and delete employee records from one page-driven flow.</h3>
+              <p id="employees-selection-text">Select an employee to view their profile or open the management page to edit records.</p>
+            </div>
+
+            <div class="page-actions">
+              <button class="primary-btn" id="employees-create-button" type="button">Create Employee</button>
+              <button class="ghost-btn" id="employees-view-button" type="button">View Selected</button>
+              <button class="ghost-btn" id="employees-edit-button" type="button">Edit Selected</button>
+              <button class="danger-btn" id="employees-delete-button" type="button">Delete Selected</button>
+            </div>
+          </section>
+
+          <section class="main-grid">
+            <article class="glass-panel panel roster-panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Live Roster</span>
+                  <h3>Persistent employee records</h3>
+                </div>
+                <div class="header-actions compact-actions">
+                  <div class="roster-tools">
+                    <label class="field inline-field">
+                      <span>Search</span>
+                      <input type="search" id="employee-search" placeholder="Search name, role, manager, or department">
+                    </label>
+                    <label class="field inline-field">
+                      <span>Sort</span>
+                      <select id="employee-sort">
+                        <option value="priority">Priority</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="performance-desc">Performance high-low</option>
+                        <option value="burnout-desc">Burnout high-low</option>
+                        <option value="salary-desc">Salary high-low</option>
+                      </select>
+                    </label>
+                    <button class="ghost-btn" id="export-csv-button" type="button">Export CSV</button>
+                    <button class="ghost-btn" id="export-pdf-button" type="button">Export PDF</button>
+                  </div>
+                </div>
+              </div>
+
               <div class="filter-row" id="department-filters"></div>
-            </div>
-          </div>
-
-          <div class="employee-grid" id="employee-grid"></div>
-        </article>
-
-        <aside class="side-stack">
-          <article class="glass-panel panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Selected Profile</span>
-                <h3>Decision support</h3>
+              <div class="employee-grid" id="employee-grid"></div>
+              <div class="pagination-row">
+                <button class="ghost-btn" id="pagination-prev" type="button">Previous</button>
+                <span class="pill-soft" id="pagination-status">Page 1 of 1</span>
+                <button class="ghost-btn" id="pagination-next" type="button">Next</button>
               </div>
-              <span class="pill-soft">Profile AI</span>
+            </article>
+
+            <aside class="side-stack">
+              <article class="glass-panel panel">
+                <div class="section-heading">
+                  <div>
+                    <span class="eyebrow">Selected Profile</span>
+                    <h3>Decision support</h3>
+                  </div>
+                  <span class="pill-soft">Profile AI</span>
+                </div>
+
+                <div id="employee-detail"></div>
+              </article>
+
+              <article class="glass-panel panel">
+                <div class="section-heading">
+                  <div>
+                    <span class="eyebrow">Decision Queue</span>
+                    <h3>Leadership priorities</h3>
+                  </div>
+                  <span class="pill-soft">Human review required</span>
+                </div>
+
+                <div class="decision-queue" id="decision-queue"></div>
+                <p class="micro-note">
+                  AI signals can support hikes, coaching, promotion, demotion, or termination review,
+                  but final decisions should always stay with human leaders and policy checks.
+                </p>
+              </article>
+            </aside>
+          </section>
+        </section>
+
+        <section class="page-view hidden" data-page-view="management">
+          <section class="page-intro glass-panel">
+            <div class="page-intro-copy">
+              <span class="eyebrow">CRUD Center</span>
+              <h3>Manage employee records on a dedicated page instead of a long scrolling section.</h3>
+              <p>Create new employees, update existing records, and remove records while the audit trail keeps history visible.</p>
             </div>
 
-            <div id="employee-detail"></div>
-          </article>
+            <div class="page-actions">
+              <button class="primary-btn" id="management-create-button" type="button">New Blank Record</button>
+              <button class="ghost-btn" id="management-back-button" type="button">Open Employees Page</button>
+            </div>
+          </section>
 
-          <article class="glass-panel panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Decision Queue</span>
-                <h3>Leadership priorities</h3>
+          <section class="management-grid">
+            <article class="glass-panel panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Employee Editor</span>
+                  <h3 id="editor-title">Update employee record</h3>
+                </div>
+                <span class="pill-soft" id="editor-mode-pill">Edit mode</span>
               </div>
-              <span class="pill-soft">Human review required</span>
+
+              <form class="editor-form" id="employee-form">
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Name</span>
+                    <input type="text" name="name" required>
+                  </label>
+                  <label class="field">
+                    <span>Role</span>
+                    <input type="text" name="role" required>
+                  </label>
+                  <label class="field">
+                    <span>Department</span>
+                    <input type="text" name="department" required>
+                  </label>
+                  <label class="field">
+                    <span>Manager</span>
+                    <input type="text" name="manager" required>
+                  </label>
+                  <label class="field">
+                    <span>Work Email</span>
+                    <input type="email" name="email" required>
+                  </label>
+                  <label class="field">
+                    <span>Profile Photo URL</span>
+                    <input type="url" name="photo" placeholder="Optional avatar URL">
+                  </label>
+                  <label class="field">
+                    <span>Availability</span>
+                    <select name="availability">
+                      <option value="Working">Working</option>
+                      <option value="On Leave">On Leave</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Work Mode</span>
+                    <select name="mode">
+                      <option value="Remote">Remote</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Onsite">Onsite</option>
+                      <option value="Away">Away</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Performance</span>
+                    <input type="number" name="performance" min="0" max="100" required>
+                  </label>
+                  <label class="field">
+                    <span>Submissions</span>
+                    <input type="number" name="submissions" min="0" max="100" required>
+                  </label>
+                  <label class="field">
+                    <span>Attendance</span>
+                    <input type="number" name="attendance" min="0" max="100" required>
+                  </label>
+                  <label class="field">
+                    <span>Workload</span>
+                    <input type="number" name="workload" min="0" max="100" required>
+                  </label>
+                  <label class="field">
+                    <span>Leave Days</span>
+                    <input type="number" name="leaveDays" min="0" max="365" required>
+                  </label>
+                  <label class="field">
+                    <span>Sentiment</span>
+                    <input type="number" name="sentiment" min="0" max="100" required>
+                  </label>
+                  <label class="field">
+                    <span>Warnings</span>
+                    <input type="number" name="warnings" min="0" max="10" required>
+                  </label>
+                  <label class="field">
+                    <span>Compliance Flags</span>
+                    <input type="number" name="complianceFlags" min="0" max="10" required>
+                  </label>
+                  <label class="field">
+                    <span>Overtime Hours</span>
+                    <input type="number" name="overtimeHours" min="0" max="200" required>
+                  </label>
+                  <label class="field">
+                    <span>Achievements</span>
+                    <input type="number" name="achievements" min="0" max="20" required>
+                  </label>
+                  <label class="field">
+                    <span>Criticality</span>
+                    <input type="number" name="criticality" min="1" max="5" required>
+                  </label>
+                  <label class="field">
+                    <span>Current Salary</span>
+                    <input type="number" name="salary" min="0" step="1000" required>
+                  </label>
+                  <label class="field">
+                    <span>Salary Currency</span>
+                    <input type="text" name="salaryCurrency" value="INR" required>
+                  </label>
+                  <label class="field">
+                    <span>Last Hike %</span>
+                    <input type="number" name="lastHikePercent" min="0" max="60" required>
+                  </label>
+                  <label class="field">
+                    <span>Last Hike Date</span>
+                    <input type="date" name="lastHikeDate" required>
+                  </label>
+                  <label class="field">
+                    <span>Next Review Date</span>
+                    <input type="date" name="nextReviewDate" required>
+                  </label>
+                  <label class="field field-wide">
+                    <span>Current Focus</span>
+                    <input type="text" name="focus" required>
+                  </label>
+                  <label class="field field-wide">
+                    <span>Milestone</span>
+                    <input type="text" name="milestone" required>
+                  </label>
+                  <label class="field field-wide">
+                    <span>Notes</span>
+                    <textarea name="notes" rows="4" required></textarea>
+                  </label>
+                </div>
+
+                <div class="form-actions">
+                  <button class="primary-btn" type="submit" id="save-employee-button">Save Employee</button>
+                  <button class="ghost-btn" type="button" id="reset-editor-button">Reset</button>
+                  <button class="danger-btn" type="button" id="delete-employee-button">Delete Employee</button>
+                </div>
+                <p class="status-text" id="editor-status"></p>
+              </form>
+            </article>
+
+            <aside class="side-stack management-side-stack">
+              <article class="glass-panel panel">
+                <div class="section-heading">
+                  <div>
+                    <span class="eyebrow">Leave Approval Desk</span>
+                    <h3>Approve or reject leave with history</h3>
+                  </div>
+                  <span class="pill-soft">Workflow</span>
+                </div>
+
+                <form class="editor-form" id="leave-form">
+                  <div class="form-grid compact-form-grid">
+                    <label class="field">
+                      <span>Employee</span>
+                      <select name="employeeId" id="leave-employee" required></select>
+                    </label>
+                    <label class="field">
+                      <span>Start Date</span>
+                      <input type="date" name="startDate" required>
+                    </label>
+                    <label class="field">
+                      <span>End Date</span>
+                      <input type="date" name="endDate" required>
+                    </label>
+                    <label class="field field-wide">
+                      <span>Reason</span>
+                      <textarea name="reason" rows="3" required></textarea>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="primary-btn" id="leave-submit-button" type="submit">Create Leave Request</button>
+                  </div>
+                  <p class="status-text" id="leave-status"></p>
+                </form>
+
+                <div class="leave-queue" id="leave-queue"></div>
+              </article>
+
+              <article class="glass-panel panel">
+                <div class="section-heading">
+                  <div>
+                    <span class="eyebrow">AI Email Studio</span>
+                    <h3>Create manager-ready email drafts</h3>
+                  </div>
+                  <span class="pill-soft">Draft to mail</span>
+                </div>
+
+                <form class="editor-form" id="email-form">
+                  <div class="form-grid compact-form-grid">
+                    <label class="field">
+                      <span>Employee</span>
+                      <select name="employeeId" id="email-employee" required></select>
+                    </label>
+                    <label class="field">
+                      <span>Email Type</span>
+                      <select name="template" id="email-template">
+                        <option value="recognition">Recognition</option>
+                        <option value="leave_approval">Leave Approval</option>
+                        <option value="salary_review">Salary / Hike Review</option>
+                        <option value="performance_followup">Performance Follow-up</option>
+                        <option value="return_to_work">Return to Work</option>
+                      </select>
+                    </label>
+                    <label class="field field-wide">
+                      <span>Extra Instructions</span>
+                      <textarea name="context" id="email-context" rows="3" placeholder="Optional tone or extra context"></textarea>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="primary-btn" id="email-generate-button" type="submit">Generate Draft</button>
+                    <button class="ghost-btn" id="email-open-button" type="button">Open Mail App</button>
+                  </div>
+                </form>
+
+                <div class="console-output email-output">
+                  <div class="output-top">
+                    <span class="output-label">Email Draft</span>
+                    <span class="pill-soft">Local AI Writer</span>
+                  </div>
+                  <p id="email-subject">Generate a draft to see the subject line.</p>
+                  <div class="email-body" id="email-body">The generated draft will appear here.</div>
+                </div>
+              </article>
+
+              <article class="glass-panel panel">
+                <div class="section-heading">
+                  <div>
+                    <span class="eyebrow">Audit Trail</span>
+                    <h3>Recent system activity</h3>
+                  </div>
+                  <span class="pill-soft">Persistent history</span>
+                </div>
+
+                <div class="audit-list" id="audit-list"></div>
+              </article>
+            </aside>
+          </section>
+        </section>
+
+        <section class="page-view hidden" data-page-view="signals">
+          <section class="page-intro glass-panel">
+            <div class="page-intro-copy">
+              <span class="eyebrow">Signals and Planning</span>
+              <h3>Use separate insight pages inside the same website for cleaner navigation.</h3>
+              <p>Capacity pressure, roadmap ideas, and future modules now live on their own page instead of at the bottom of one long dashboard.</p>
             </div>
 
-            <div class="decision-queue" id="decision-queue"></div>
-            <p class="micro-note">
-              AI signals can support hikes, coaching, promotion, demotion, or termination review,
-              but final decisions should always stay with human leaders and policy checks.
-            </p>
-          </article>
-        </aside>
-      </section>
-
-      <section class="management-grid" id="editor">
-        <article class="glass-panel panel">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">Employee Editor</span>
-              <h3 id="editor-title">Update employee record</h3>
+            <div class="page-actions">
+              <button class="ghost-btn" id="signals-summary-button" type="button">Run Workforce Summary</button>
             </div>
-            <span class="pill-soft" id="editor-mode-pill">Edit mode</span>
-          </div>
+          </section>
 
-          <form class="editor-form" id="employee-form">
-            <div class="form-grid">
-              <label class="field">
-                <span>Name</span>
-                <input type="text" name="name" required>
-              </label>
-              <label class="field">
-                <span>Role</span>
-                <input type="text" name="role" required>
-              </label>
-              <label class="field">
-                <span>Department</span>
-                <input type="text" name="department" required>
-              </label>
-              <label class="field">
-                <span>Manager</span>
-                <input type="text" name="manager" required>
-              </label>
-              <label class="field">
-                <span>Availability</span>
-                <select name="availability">
-                  <option value="Working">Working</option>
-                  <option value="On Leave">On Leave</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Work Mode</span>
-                <select name="mode">
-                  <option value="Remote">Remote</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Onsite">Onsite</option>
-                  <option value="Away">Away</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Performance</span>
-                <input type="number" name="performance" min="0" max="100" required>
-              </label>
-              <label class="field">
-                <span>Submissions</span>
-                <input type="number" name="submissions" min="0" max="100" required>
-              </label>
-              <label class="field">
-                <span>Attendance</span>
-                <input type="number" name="attendance" min="0" max="100" required>
-              </label>
-              <label class="field">
-                <span>Workload</span>
-                <input type="number" name="workload" min="0" max="100" required>
-              </label>
-              <label class="field">
-                <span>Leave Days</span>
-                <input type="number" name="leaveDays" min="0" max="365" required>
-              </label>
-              <label class="field">
-                <span>Sentiment</span>
-                <input type="number" name="sentiment" min="0" max="100" required>
-              </label>
-              <label class="field">
-                <span>Warnings</span>
-                <input type="number" name="warnings" min="0" max="10" required>
-              </label>
-              <label class="field">
-                <span>Compliance Flags</span>
-                <input type="number" name="complianceFlags" min="0" max="10" required>
-              </label>
-              <label class="field">
-                <span>Overtime Hours</span>
-                <input type="number" name="overtimeHours" min="0" max="200" required>
-              </label>
-              <label class="field">
-                <span>Achievements</span>
-                <input type="number" name="achievements" min="0" max="20" required>
-              </label>
-              <label class="field">
-                <span>Criticality</span>
-                <input type="number" name="criticality" min="1" max="5" required>
-              </label>
-              <label class="field field-wide">
-                <span>Current Focus</span>
-                <input type="text" name="focus" required>
-              </label>
-              <label class="field field-wide">
-                <span>Milestone</span>
-                <input type="text" name="milestone" required>
-              </label>
-              <label class="field field-wide">
-                <span>Notes</span>
-                <textarea name="notes" rows="4" required></textarea>
-              </label>
-            </div>
+          <section class="lower-grid">
+            <article class="glass-panel panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Department Charts</span>
+                  <h3>Performance, burnout, leave, and pay by team</h3>
+                </div>
+                <span class="pill-soft">Comparative view</span>
+              </div>
 
-            <div class="form-actions">
-              <button class="primary-btn" type="submit" id="save-employee-button">Save Employee</button>
-              <button class="ghost-btn" type="button" id="reset-editor-button">Reset</button>
-              <button class="danger-btn" type="button" id="delete-employee-button">Delete Employee</button>
-            </div>
-            <p class="status-text" id="editor-status"></p>
-          </form>
-        </article>
+              <div class="department-charts" id="department-charts"></div>
+            </article>
 
-        <article class="glass-panel panel">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">Audit Trail</span>
-              <h3>Recent system activity</h3>
-            </div>
-            <span class="pill-soft">Persistent history</span>
-          </div>
+            <article class="glass-panel panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Capacity Matrix</span>
+                  <h3>Leave and workload pressure by department</h3>
+                </div>
+                <span class="pill-soft">7 day outlook</span>
+              </div>
 
-          <div class="audit-list" id="audit-list"></div>
-        </article>
-      </section>
+              <div class="capacity-matrix" id="capacity-matrix"></div>
+            </article>
+          </section>
 
-      <section class="lower-grid" id="signals">
-        <article class="glass-panel panel">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">Capacity Matrix</span>
-              <h3>Leave and workload pressure by department</h3>
-            </div>
-            <span class="pill-soft">7 day outlook</span>
-          </div>
+          <section class="lower-grid">
+            <article class="glass-panel panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Salary Watch</span>
+                  <h3>Compensation and hike history overview</h3>
+                </div>
+                <span class="pill-soft">Comp review</span>
+              </div>
 
-          <div class="capacity-matrix" id="capacity-matrix"></div>
-        </article>
+              <div class="salary-insights" id="salary-insights"></div>
+            </article>
 
-        <article class="glass-panel panel">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">Platform Roadmap</span>
-              <h3>What the system can grow into next</h3>
-            </div>
-            <span class="pill-soft">Future-ready</span>
-          </div>
+            <article class="glass-panel panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Platform Roadmap</span>
+                  <h3>What the system can grow into next</h3>
+                </div>
+                <span class="pill-soft">Future-ready</span>
+              </div>
 
-          <div class="feature-grid" id="feature-grid"></div>
-        </article>
-      </section>
+              <div class="feature-grid" id="feature-grid"></div>
+            </article>
+          </section>
+        </section>
+      </div>
 
     </section>
 
