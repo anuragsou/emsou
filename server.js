@@ -43,31 +43,91 @@ const FEATURE_ROADMAP = [
   }
 ];
 
+const DEFAULT_USERS = [
+  {
+    id: "user-admin-001",
+    name: "EMSOU Admin",
+    email: "admin@emsou.local",
+    role: "Admin",
+    salt: "6e5aa52287565b2d2685cf52b0125b91",
+    passwordHash: "646f282b7111236e888816e17da8a6f8556d849a7a2b1f8638403c8f0bc166280a7cf64373cc82c6478cd1d490be62a6b142e1e5b645520a6157532ce7ddd0f3",
+    createdAt: "2026-03-24T08:00:00.000Z"
+  }
+];
+
+const DEFAULT_AUDIT_LOG = [
+  {
+    id: "audit-001",
+    action: "System seeded",
+    detail: "Initial workforce dataset and admin account were created.",
+    actor: "EMSOU System",
+    createdAt: "2026-03-24T08:00:00.000Z"
+  },
+  {
+    id: "audit-002",
+    action: "Review cycle prepared",
+    detail: "Quarter review workflows and management scorecards were staged for launch.",
+    actor: "EMSOU Admin",
+    createdAt: "2026-03-24T12:30:00.000Z"
+  }
+];
+
 async function ensureDataFiles() {
   await fs.mkdir(DATA_DIR, { recursive: true });
-  await ensureJsonFile("users.json", []);
+  await ensureJsonFile("users.json", DEFAULT_USERS);
   await ensureJsonFile("employees.json", []);
-  await ensureJsonFile("audit-log.json", []);
+  await ensureJsonFile("audit-log.json", DEFAULT_AUDIT_LOG);
+  await ensureSeedData("users.json", DEFAULT_USERS);
+  await ensureSeedData("audit-log.json", DEFAULT_AUDIT_LOG);
 }
 
 async function ensureJsonFile(fileName, fallback) {
-  const filePath = path.join(DATA_DIR, fileName);
+  const filePath = await resolveDataFilePath(fileName);
 
   try {
     await fs.access(filePath);
   } catch (error) {
+    await writeJsonToPath(filePath, fallback);
+  }
+}
+
+async function ensureSeedData(fileName, fallback) {
+  const data = await readJson(fileName);
+  if (!Array.isArray(data) || data.length === 0) {
     await writeJson(fileName, fallback);
   }
 }
 
 async function readJson(fileName) {
-  const filePath = path.join(DATA_DIR, fileName);
+  const filePath = await resolveDataFilePath(fileName);
   const fileContents = await fs.readFile(filePath, "utf8");
   return JSON.parse(fileContents);
 }
 
 async function writeJson(fileName, data) {
-  const filePath = path.join(DATA_DIR, fileName);
+  const filePath = await resolveDataFilePath(fileName);
+  await writeJsonToPath(filePath, data);
+}
+
+async function resolveDataFilePath(fileName) {
+  const preferredPath = path.join(DATA_DIR, fileName);
+  const legacyRootPath = path.join(ROOT_DIR, fileName);
+
+  try {
+    await fs.access(preferredPath);
+    return preferredPath;
+  } catch (error) {}
+
+  try {
+    await fs.access(legacyRootPath);
+    return legacyRootPath;
+  } catch (error) {}
+
+  return preferredPath;
+}
+
+async function writeJsonToPath(filePath, data) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
   const tempFilePath = `${filePath}.tmp`;
   const payload = `${JSON.stringify(data, null, 2)}\n`;
 
