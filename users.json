@@ -1,0 +1,11 @@
+[
+  {
+    "id": "user-admin-001",
+    "name": "EMSOU Admin",
+    "email": "admin@emsou.local",
+    "role": "Admin",
+    "salt": "6e5aa52287565b2d2685cf52b0125b91",
+    "passwordHash": "646f282b7111236e888816e17da8a6f8556d849a7a2b1f8638403c8f0bc166280a7cf64373cc82c6478cd1d490be62a6b142e1e5b645520a6157532ce7ddd0f3",
+    "createdAt": "2026-03-24T08:00:00.000Z"
+  }
+]

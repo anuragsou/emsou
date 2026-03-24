@@ -1,0 +1,11 @@
+services:
+  - type: web
+    runtime: node
+    name: emsou
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true

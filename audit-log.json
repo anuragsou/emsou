@@ -1,0 +1,16 @@
+[
+  {
+    "id": "audit-001",
+    "action": "System seeded",
+    "detail": "Initial workforce dataset and admin account were created.",
+    "actor": "EMSOU System",
+    "createdAt": "2026-03-24T08:00:00.000Z"
+  },
+  {
+    "id": "audit-002",
+    "action": "Review cycle prepared",
+    "detail": "Quarter review workflows and management scorecards were staged for launch.",
+    "actor": "EMSOU Admin",
+    "createdAt": "2026-03-24T12:30:00.000Z"
+  }
+]
