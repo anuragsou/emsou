@@ -339,7 +339,256 @@ function normalizeString(value, fieldName) {
   return normalized;
 }
 
-function normalizeEmployeeInput(input) {
+function normalizeOptionalString(value, fallback = "") {
+  const normalized = String(value || "").trim();
+  return normalized || fallback;
+}
+
+function defaultEmailFromName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .concat("@emsou.local");
+}
+
+function defaultPhotoFromName(name) {
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(name || "EMSOU")}`;
+}
+
+function toIsoDate(value, fallback = "") {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return fallback;
+  }
+
+  const timestamp = new Date(normalized);
+  if (Number.isNaN(timestamp.getTime())) {
+    return fallback;
+  }
+
+  return timestamp.toISOString().slice(0, 10);
+}
+
+function shiftIsoDate(value, days) {
+  const baseDate = value ? new Date(value) : new Date();
+  if (Number.isNaN(baseDate.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  baseDate.setUTCDate(baseDate.getUTCDate() + days);
+  return baseDate.toISOString().slice(0, 10);
+}
+
+function optionalNumber(value, fallback, min, max) {
+  if (value === "" || value === null || value === undefined) {
+    return fallback;
+  }
+
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return Math.max(min, Math.min(max, Math.round(number)));
+}
+
+function defaultSalaryForEmployee(employee) {
+  const departmentBase = {
+    Engineering: 1650000,
+    Design: 1350000,
+    Finance: 1450000,
+    Sales: 1250000,
+    "People Ops": 1400000,
+    Strategy: 1550000,
+    Support: 980000,
+    Marketing: 1180000,
+    Success: 1120000
+  };
+
+  const base = departmentBase[employee.department] || 1100000;
+  const performanceLift = employee.performance * 4200;
+  const scopeLift = employee.criticality * 45000 + employee.achievements * 22000;
+  return Math.round(base + performanceLift + scopeLift);
+}
+
+function createSalaryHistoryDefaults(employee, salary, lastHikeDate, lastHikePercent) {
+  const latestSalary = salary;
+  const previousSalary = Math.max(500000, Math.round(latestSalary / (1 + lastHikePercent / 100)));
+  const earliestSalary = Math.max(420000, Math.round(previousSalary * 0.92));
+
+  return [
+    {
+      id: `${employee.id}-salary-current`,
+      salary: latestSalary,
+      percent: lastHikePercent,
+      reason: "Latest salary review applied.",
+      effectiveDate: lastHikeDate
+    },
+    {
+      id: `${employee.id}-salary-previous`,
+      salary: previousSalary,
+      percent: 8,
+      reason: "Previous annual compensation revision.",
+      effectiveDate: shiftIsoDate(lastHikeDate, -365)
+    },
+    {
+      id: `${employee.id}-salary-earlier`,
+      salary: earliestSalary,
+      percent: 6,
+      reason: "Historical compensation benchmark.",
+      effectiveDate: shiftIsoDate(lastHikeDate, -730)
+    }
+  ];
+}
+
+function sanitizeSalaryHistory(salaryHistory, employee, salary, lastHikeDate, lastHikePercent) {
+  const normalizedHistory = Array.isArray(salaryHistory)
+    ? salaryHistory
+        .map((entry, index) => ({
+          id: normalizeOptionalString(entry.id, `${employee.id}-salary-${index + 1}`),
+          salary: optionalNumber(entry.salary, salary, 0, 50000000),
+          percent: optionalNumber(entry.percent, lastHikePercent, -100, 100),
+          reason: normalizeOptionalString(entry.reason, "Compensation update recorded."),
+          effectiveDate: toIsoDate(entry.effectiveDate, lastHikeDate)
+        }))
+        .filter((entry) => entry.salary > 0)
+    : [];
+
+  return normalizedHistory.length ? normalizedHistory.slice(0, 8) : createSalaryHistoryDefaults(employee, salary, lastHikeDate, lastHikePercent);
+}
+
+function buildDefaultLeaveRequests(employee) {
+  const leaveRequests = [];
+
+  if (employee.availability === "On Leave") {
+    const startDate = shiftIsoDate(employee.updatedAt || new Date().toISOString(), -2);
+    const endDate = shiftIsoDate(startDate, 4);
+    leaveRequests.push({
+      id: `${employee.id}-leave-approved`,
+      status: "Approved",
+      startDate,
+      endDate,
+      days: 5,
+      reason: "Approved personal leave.",
+      requestedAt: `${startDate}T09:00:00.000Z`,
+      decidedAt: `${shiftIsoDate(startDate, -1)}T15:30:00.000Z`,
+      decidedBy: employee.manager,
+      decisionNote: "Coverage confirmed and leave approved.",
+      history: [
+        {
+          id: `${employee.id}-leave-history-approved`,
+          label: "Approved",
+          actor: employee.manager,
+          note: "Coverage confirmed and leave approved.",
+          createdAt: `${shiftIsoDate(startDate, -1)}T15:30:00.000Z`
+        },
+        {
+          id: `${employee.id}-leave-history-requested`,
+          label: "Requested",
+          actor: employee.name,
+          note: "Personal leave request submitted.",
+          createdAt: `${shiftIsoDate(startDate, -3)}T09:15:00.000Z`
+        }
+      ]
+    });
+  }
+
+  if (employee.availability === "Working" && employee.overtimeHours >= 16 && employee.sentiment <= 70) {
+    const startDate = shiftIsoDate(employee.updatedAt || new Date().toISOString(), 5);
+    const endDate = shiftIsoDate(startDate, 2);
+    leaveRequests.push({
+      id: `${employee.id}-leave-pending`,
+      status: "Pending",
+      startDate,
+      endDate,
+      days: 3,
+      reason: "Recovery leave request after sustained overtime.",
+      requestedAt: `${shiftIsoDate(startDate, -3)}T10:00:00.000Z`,
+      decidedAt: "",
+      decidedBy: "",
+      decisionNote: "",
+      history: [
+        {
+          id: `${employee.id}-leave-history-pending`,
+          label: "Requested",
+          actor: employee.name,
+          note: "Requested recovery leave after sustained overtime.",
+          createdAt: `${shiftIsoDate(startDate, -3)}T10:00:00.000Z`
+        }
+      ]
+    });
+  }
+
+  return leaveRequests;
+}
+
+function sanitizeLeaveRequests(leaveRequests, employee, useDefaultLeaveRequests = true) {
+  const normalizedRequests = Array.isArray(leaveRequests)
+    ? leaveRequests
+        .map((request, index) => {
+          const startDate = toIsoDate(request.startDate, shiftIsoDate(new Date().toISOString(), 3));
+          const endDate = toIsoDate(request.endDate, shiftIsoDate(startDate, 1));
+
+          return {
+            id: normalizeOptionalString(request.id, `${employee.id}-leave-${index + 1}`),
+            status: ["Pending", "Approved", "Rejected"].includes(request.status) ? request.status : "Pending",
+            startDate,
+            endDate,
+            days: optionalNumber(request.days, 1, 1, 90),
+            reason: normalizeOptionalString(request.reason, "Leave request submitted."),
+            requestedAt: normalizeOptionalString(request.requestedAt, new Date().toISOString()),
+            decidedAt: normalizeOptionalString(request.decidedAt, ""),
+            decidedBy: normalizeOptionalString(request.decidedBy, ""),
+            decisionNote: normalizeOptionalString(request.decisionNote, ""),
+            history: Array.isArray(request.history)
+              ? request.history.map((entry, historyIndex) => ({
+                  id: normalizeOptionalString(entry.id, `${employee.id}-leave-history-${index + 1}-${historyIndex + 1}`),
+                  label: normalizeOptionalString(entry.label, "Updated"),
+                  actor: normalizeOptionalString(entry.actor, employee.manager || "EMSOU"),
+                  note: normalizeOptionalString(entry.note, ""),
+                  createdAt: normalizeOptionalString(entry.createdAt, new Date().toISOString())
+                }))
+              : []
+          };
+        })
+        .slice(0, 8)
+    : [];
+
+  if (normalizedRequests.length) {
+    return normalizedRequests;
+  }
+
+  return useDefaultLeaveRequests ? buildDefaultLeaveRequests(employee) : [];
+}
+
+function hydrateEmployeeRecord(employee, options = {}) {
+  const useDefaultLeaveRequests = options.useDefaultLeaveRequests !== false;
+  const salary = optionalNumber(employee.salary, defaultSalaryForEmployee(employee), 0, 50000000);
+  const lastHikePercent = optionalNumber(employee.lastHikePercent, Math.max(6, Math.round(employee.achievements * 1.4 + employee.performance * 0.04)), 0, 60);
+  const lastHikeDate = toIsoDate(employee.lastHikeDate, shiftIsoDate(employee.updatedAt || new Date().toISOString(), -120));
+  const nextReviewDate = toIsoDate(employee.nextReviewDate, shiftIsoDate(employee.updatedAt || new Date().toISOString(), 45));
+
+  const hydrated = {
+    ...employee,
+    email: normalizeOptionalString(employee.email, defaultEmailFromName(employee.name)),
+    photo: normalizeOptionalString(employee.photo, defaultPhotoFromName(employee.name)),
+    salary,
+    salaryCurrency: normalizeOptionalString(employee.salaryCurrency, "INR"),
+    lastHikePercent,
+    lastHikeDate,
+    nextReviewDate
+  };
+
+  hydrated.salaryHistory = sanitizeSalaryHistory(hydrated.salaryHistory, hydrated, salary, lastHikeDate, lastHikePercent);
+  hydrated.leaveRequests = sanitizeLeaveRequests(hydrated.leaveRequests, hydrated, useDefaultLeaveRequests);
+
+  return hydrated;
+}
+
+function normalizeEmployeeInput(input, existingEmployee = null) {
+  const name = normalizeString(input.name, "Name");
   const availability = normalizeString(input.availability, "Availability");
   const mode = normalizeString(input.mode, "Work mode");
 
@@ -351,8 +600,9 @@ function normalizeEmployeeInput(input) {
     throw new Error("Work mode must be Remote, Hybrid, Onsite, or Away.");
   }
 
-  return {
-    name: normalizeString(input.name, "Name"),
+  return hydrateEmployeeRecord({
+    ...existingEmployee,
+    name,
     role: normalizeString(input.role, "Role"),
     department: normalizeString(input.department, "Department"),
     availability,
@@ -369,10 +619,19 @@ function normalizeEmployeeInput(input) {
     achievements: toNumber(input.achievements, 0, 20),
     criticality: toNumber(input.criticality, 1, 5),
     manager: normalizeString(input.manager, "Manager"),
+    email: normalizeOptionalString(input.email, existingEmployee?.email || defaultEmailFromName(name)),
+    photo: normalizeOptionalString(input.photo, existingEmployee?.photo || defaultPhotoFromName(name)),
+    salary: optionalNumber(input.salary, existingEmployee?.salary ?? defaultSalaryForEmployee(input), 0, 50000000),
+    salaryCurrency: normalizeOptionalString(input.salaryCurrency, existingEmployee?.salaryCurrency || "INR"),
+    nextReviewDate: toIsoDate(input.nextReviewDate, existingEmployee?.nextReviewDate || shiftIsoDate(new Date().toISOString(), 45)),
+    lastHikePercent: optionalNumber(input.lastHikePercent, existingEmployee?.lastHikePercent ?? 8, 0, 60),
+    lastHikeDate: toIsoDate(input.lastHikeDate, existingEmployee?.lastHikeDate || shiftIsoDate(new Date().toISOString(), -120)),
+    salaryHistory: Array.isArray(input.salaryHistory) ? input.salaryHistory : existingEmployee?.salaryHistory,
+    leaveRequests: Array.isArray(input.leaveRequests) ? input.leaveRequests : existingEmployee?.leaveRequests,
     focus: normalizeString(input.focus, "Current focus"),
     milestone: normalizeString(input.milestone, "Milestone"),
     notes: normalizeString(input.notes, "Notes")
-  };
+  }, { useDefaultLeaveRequests: false });
 }
 
 function average(values) {
@@ -523,20 +782,21 @@ function getAction(employee) {
 
 function enrichEmployees(employees) {
   return employees.map((employee) => {
-    const burnout = burnoutRisk(employee);
-    const promotion = promotionScore(employee);
-    const discipline = disciplineRisk(employee);
-    const hike = hikeScore(employee);
-    const action = getAction(employee);
+    const hydrated = hydrateEmployeeRecord(employee);
+    const burnout = burnoutRisk(hydrated);
+    const promotion = promotionScore(hydrated);
+    const discipline = disciplineRisk(hydrated);
+    const hike = hikeScore(hydrated);
+    const action = getAction(hydrated);
 
     return {
-      ...employee,
+      ...hydrated,
       burnout,
       promotion,
       discipline,
       hike,
       action,
-      lastUpdate: formatRelativeTime(employee.updatedAt)
+      lastUpdate: formatRelativeTime(hydrated.updatedAt)
     };
   });
 }
@@ -624,6 +884,105 @@ function buildCapacity(enrichedEmployees) {
       label
     };
   });
+}
+
+function buildLeaveQueue(enrichedEmployees) {
+  return enrichedEmployees
+    .flatMap((employee) =>
+      employee.leaveRequests.map((request) => ({
+        ...request,
+        employeeId: employee.id,
+        employeeName: employee.name,
+        employeeRole: employee.role,
+        department: employee.department,
+        photo: employee.photo
+      }))
+    )
+    .sort((left, right) => {
+      const statusWeight = { Pending: 0, Approved: 1, Rejected: 2 };
+      return (
+        (statusWeight[left.status] ?? 3) - (statusWeight[right.status] ?? 3) ||
+        new Date(right.requestedAt).getTime() - new Date(left.requestedAt).getTime()
+      );
+    })
+    .slice(0, 12);
+}
+
+function buildDepartmentCharts(enrichedEmployees) {
+  const groups = new Map();
+
+  for (const employee of enrichedEmployees) {
+    if (!groups.has(employee.department)) {
+      groups.set(employee.department, []);
+    }
+    groups.get(employee.department).push(employee);
+  }
+
+  return [...groups.entries()]
+    .map(([department, members]) => ({
+      department,
+      headcount: members.length,
+      working: members.filter((employee) => employee.availability === "Working").length,
+      onLeave: members.filter((employee) => employee.availability === "On Leave").length,
+      avgPerformance: Math.round(average(members.map((employee) => employee.performance))),
+      avgBurnout: Math.round(average(members.map((employee) => employee.burnout))),
+      avgSalary: Math.round(average(members.map((employee) => employee.salary))),
+      avgHike: Math.round(average(members.map((employee) => employee.lastHikePercent)))
+    }))
+    .sort((left, right) => right.headcount - left.headcount);
+}
+
+function buildSalaryInsights(enrichedEmployees) {
+  const payroll = enrichedEmployees.reduce((total, employee) => total + employee.salary, 0);
+  const avgSalary = Math.round(average(enrichedEmployees.map((employee) => employee.salary)));
+  const topPaid = [...enrichedEmployees]
+    .sort((left, right) => right.salary - left.salary)
+    .slice(0, 4)
+    .map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      department: employee.department,
+      salary: employee.salary,
+      currency: employee.salaryCurrency,
+      lastHikePercent: employee.lastHikePercent
+    }));
+  const reviewSoon = [...enrichedEmployees]
+    .sort((left, right) => String(left.nextReviewDate).localeCompare(String(right.nextReviewDate)))
+    .slice(0, 4)
+    .map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      department: employee.department,
+      nextReviewDate: employee.nextReviewDate,
+      salary: employee.salary,
+      currency: employee.salaryCurrency
+    }));
+
+  return {
+    payroll,
+    avgSalary,
+    topPaid,
+    reviewSoon
+  };
+}
+
+function calculateLeaveDays(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 1;
+  }
+
+  const difference = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+  return Math.max(1, difference);
+}
+
+function isDateInsideLeaveWindow(dateString, startDate, endDate) {
+  const date = new Date(dateString);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return date >= start && date <= end;
 }
 
 function listNames(collection) {
@@ -719,6 +1078,9 @@ function buildDashboardPayload(user, employees, auditLog) {
     metrics: buildMetrics(enrichedEmployees),
     decisions,
     capacity: buildCapacity(enrichedEmployees),
+    leaveQueue: buildLeaveQueue(enrichedEmployees),
+    departmentCharts: buildDepartmentCharts(enrichedEmployees),
+    salaryInsights: buildSalaryInsights(enrichedEmployees),
     departments: ["All", ...new Set(enrichedEmployees.map((employee) => employee.department))],
     auditLog: auditLog.slice(0, 8),
     featureRoadmap: FEATURE_ROADMAP
@@ -808,6 +1170,128 @@ async function handleApiRequest(request, response, url) {
     return sendJson(response, 201, { employee: record });
   }
 
+  if (request.method === "POST" && /^\/api\/employees\/[^/]+\/leave-requests$/.test(url.pathname)) {
+    const employeeId = url.pathname.split("/")[3];
+    const body = await parseBody(request);
+    const employees = await readJson("employees.json");
+    const employeeIndex = employees.findIndex((employee) => employee.id === employeeId);
+
+    if (employeeIndex === -1) {
+      return sendJson(response, 404, { error: "Employee not found." });
+    }
+
+    const employee = hydrateEmployeeRecord(employees[employeeIndex]);
+    const now = new Date().toISOString();
+    const startDate = toIsoDate(body.startDate, shiftIsoDate(now, 7));
+    const endDate = toIsoDate(body.endDate, shiftIsoDate(startDate, 1));
+    const leaveRequest = {
+      id: `leave-${crypto.randomUUID()}`,
+      status: "Pending",
+      startDate,
+      endDate,
+      days: optionalNumber(body.days, calculateLeaveDays(startDate, endDate), 1, 90),
+      reason: normalizeString(body.reason, "Leave reason"),
+      requestedAt: now,
+      decidedAt: "",
+      decidedBy: "",
+      decisionNote: "",
+      history: [
+        {
+          id: `leave-history-${crypto.randomUUID()}`,
+          label: "Requested",
+          actor: user.name,
+          note: normalizeOptionalString(body.reason, "Leave request submitted."),
+          createdAt: now
+        }
+      ]
+    };
+
+    const updatedRecord = {
+      ...employee,
+      leaveRequests: [leaveRequest, ...employee.leaveRequests].slice(0, 8),
+      updatedAt: now
+    };
+
+    employees[employeeIndex] = updatedRecord;
+    await writeJson("employees.json", employees);
+    await appendAuditEntry("Leave request created", `${employee.name} leave request was created for ${leaveRequest.startDate} to ${leaveRequest.endDate}.`, user.name);
+
+    return sendJson(response, 201, { employee: updatedRecord, leaveRequest });
+  }
+
+  if (request.method === "POST" && /^\/api\/employees\/[^/]+\/leave-requests\/[^/]+\/action$/.test(url.pathname)) {
+    const [, , , employeeId, , requestId] = url.pathname.split("/");
+    const body = await parseBody(request);
+    const employees = await readJson("employees.json");
+    const employeeIndex = employees.findIndex((employee) => employee.id === employeeId);
+
+    if (employeeIndex === -1) {
+      return sendJson(response, 404, { error: "Employee not found." });
+    }
+
+    const employee = hydrateEmployeeRecord(employees[employeeIndex]);
+    const requestIndex = employee.leaveRequests.findIndex((request) => request.id === requestId);
+
+    if (requestIndex === -1) {
+      return sendJson(response, 404, { error: "Leave request not found." });
+    }
+
+    const nextStatus = String(body.status || "").trim();
+    if (!["Approved", "Rejected"].includes(nextStatus)) {
+      return sendJson(response, 400, { error: "Leave action must be Approved or Rejected." });
+    }
+
+    const currentRequest = employee.leaveRequests[requestIndex];
+    if (currentRequest.status !== "Pending") {
+      return sendJson(response, 400, { error: "Only pending leave requests can be actioned." });
+    }
+
+    const now = new Date().toISOString();
+    const updatedRequest = {
+      ...currentRequest,
+      status: nextStatus,
+      decidedAt: now,
+      decidedBy: user.name,
+      decisionNote: normalizeOptionalString(body.note, nextStatus === "Approved" ? "Leave approved." : "Leave rejected."),
+      history: [
+        {
+          id: `leave-history-${crypto.randomUUID()}`,
+          label: nextStatus,
+          actor: user.name,
+          note: normalizeOptionalString(body.note, nextStatus === "Approved" ? "Leave approved." : "Leave rejected."),
+          createdAt: now
+        },
+        ...currentRequest.history
+      ].slice(0, 10)
+    };
+
+    const nextLeaveDays =
+      nextStatus === "Approved"
+        ? clamp(employee.leaveDays + updatedRequest.days, 0, 365)
+        : employee.leaveDays;
+
+    const updatedRecord = {
+      ...employee,
+      availability:
+        nextStatus === "Approved" && isDateInsideLeaveWindow(now, updatedRequest.startDate, updatedRequest.endDate)
+          ? "On Leave"
+          : employee.availability,
+      leaveDays: nextLeaveDays,
+      leaveRequests: employee.leaveRequests.map((request, index) => (index === requestIndex ? updatedRequest : request)),
+      updatedAt: now
+    };
+
+    employees[employeeIndex] = updatedRecord;
+    await writeJson("employees.json", employees);
+    await appendAuditEntry(
+      `Leave request ${nextStatus.toLowerCase()}`,
+      `${employee.name} leave request for ${updatedRequest.startDate} to ${updatedRequest.endDate} was ${nextStatus.toLowerCase()}.`,
+      user.name
+    );
+
+    return sendJson(response, 200, { employee: updatedRecord, leaveRequest: updatedRequest });
+  }
+
   if (request.method === "PUT" && url.pathname.startsWith("/api/employees/")) {
     const employeeId = url.pathname.slice("/api/employees/".length);
     const body = await parseBody(request);
@@ -818,12 +1302,31 @@ async function handleApiRequest(request, response, url) {
       return sendJson(response, 404, { error: "Employee not found." });
     }
 
-    const normalized = normalizeEmployeeInput(body);
+    const existingEmployee = hydrateEmployeeRecord(employees[employeeIndex]);
+    const normalized = normalizeEmployeeInput(body, existingEmployee);
+    const previousSalary = existingEmployee.salary;
     const updatedRecord = {
-      ...employees[employeeIndex],
+      ...existingEmployee,
       ...normalized,
       updatedAt: new Date().toISOString()
     };
+
+    if (updatedRecord.salary !== previousSalary) {
+      const salaryChangePercent = previousSalary
+        ? Math.round(((updatedRecord.salary - previousSalary) / previousSalary) * 100)
+        : updatedRecord.lastHikePercent;
+
+      updatedRecord.salaryHistory = [
+        {
+          id: `salary-${crypto.randomUUID()}`,
+          salary: updatedRecord.salary,
+          percent: salaryChangePercent,
+          reason: "Salary updated from the management page.",
+          effectiveDate: updatedRecord.lastHikeDate || new Date().toISOString().slice(0, 10)
+        },
+        ...updatedRecord.salaryHistory.filter((entry) => entry.salary !== updatedRecord.salary)
+      ].slice(0, 8);
+    }
 
     employees[employeeIndex] = updatedRecord;
     await writeJson("employees.json", employees);
