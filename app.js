@@ -83,11 +83,6 @@ function cacheElements() {
   elements.capacityMatrix = document.getElementById("capacity-matrix");
   elements.salaryInsights = document.getElementById("salary-insights");
   elements.featureGrid = document.getElementById("feature-grid");
-  elements.leaveForm = document.getElementById("leave-form");
-  elements.leaveEmployee = document.getElementById("leave-employee");
-  elements.leaveStatus = document.getElementById("leave-status");
-  elements.leaveSubmitButton = document.getElementById("leave-submit-button");
-  elements.leaveQueue = document.getElementById("leave-queue");
   elements.emailForm = document.getElementById("email-form");
   elements.emailEmployee = document.getElementById("email-employee");
   elements.emailTemplate = document.getElementById("email-template");
@@ -144,10 +139,8 @@ function bindEvents() {
   elements.employeeDetail.addEventListener("click", handleProfileActionClick);
   elements.departmentFilters.addEventListener("click", handleDepartmentFilterClick);
   elements.employeeForm.addEventListener("submit", handleEmployeeSave);
-  elements.leaveForm.addEventListener("submit", handleLeaveCreate);
   elements.resetEditorButton.addEventListener("click", handleEditorReset);
   elements.deleteEmployeeButton.addEventListener("click", handleEmployeeDelete);
-  elements.leaveQueue.addEventListener("click", handleLeaveQueueAction);
   elements.emailForm.addEventListener("submit", handleEmailDraftGenerate);
   elements.emailOpenButton.addEventListener("click", openDraftInMailClient);
   elements.suggestionRow.addEventListener("click", handleSuggestionClick);
@@ -255,11 +248,6 @@ function setAuthStatus(message, isError = false) {
 function setEditorStatus(message, isError = false) {
   elements.editorStatus.textContent = message;
   elements.editorStatus.style.color = isError ? "var(--rose)" : "var(--muted)";
-}
-
-function setLeaveStatus(message, isError = false) {
-  elements.leaveStatus.textContent = message;
-  elements.leaveStatus.style.color = isError ? "var(--rose)" : "var(--muted)";
 }
 
 function showFlash(message, isError = false) {
@@ -519,7 +507,6 @@ function renderDashboard() {
   renderPagination();
   renderEmployeeDetail();
   renderDecisionQueue();
-  renderLeaveQueue();
   renderEmployeePickers();
   renderDepartmentCharts();
   renderCapacity();
@@ -1083,39 +1070,6 @@ function renderDecisionQueue() {
     .join("");
 }
 
-function renderLeaveQueue() {
-  if (!state.dashboard.leaveQueue.length) {
-    elements.leaveQueue.innerHTML = '<div class="empty-state">No leave requests are waiting right now.</div>';
-    return;
-  }
-
-  elements.leaveQueue.innerHTML = state.dashboard.leaveQueue
-    .map(
-      (request) => `
-        <article class="leave-item">
-          <div class="decision-row">
-            <div class="leave-identity">
-              ${renderAvatar({ name: request.employeeName, photo: request.photo })}
-              <div>
-                <h4>${escapeHtml(request.employeeName)}</h4>
-                <p>${escapeHtml(`${request.department} · ${request.employeeRole}`)}</p>
-              </div>
-            </div>
-            <span class="status-chip ${escapeHtml(request.status === "Approved" ? "tone-strong" : request.status === "Rejected" ? "tone-risk" : "tone-leave")}">${escapeHtml(request.status)}</span>
-          </div>
-          <p>${escapeHtml(`${formatDate(request.startDate)} to ${formatDate(request.endDate)} · ${request.days} day(s)`)} </p>
-          <p>${escapeHtml(request.reason)}</p>
-          <p class="micro-note">${escapeHtml(request.history?.[0]?.label || "Requested")} by ${escapeHtml(request.history?.[0]?.actor || request.employeeName)} on ${escapeHtml(formatDateTime(request.history?.[0]?.createdAt || request.requestedAt))}</p>
-          <div class="leave-actions">
-            <button class="ghost-btn" type="button" data-leave-action="Approved" data-employee-id="${escapeHtml(request.employeeId)}" data-request-id="${escapeHtml(request.id)}" ${request.status !== "Pending" ? "disabled" : ""}>Approve</button>
-            <button class="danger-btn" type="button" data-leave-action="Rejected" data-employee-id="${escapeHtml(request.employeeId)}" data-request-id="${escapeHtml(request.id)}" ${request.status !== "Pending" ? "disabled" : ""}>Reject</button>
-          </div>
-        </article>
-      `
-    )
-    .join("");
-}
-
 function renderEmployeePickers() {
   const options = getEmployees()
     .map(
@@ -1125,24 +1079,10 @@ function renderEmployeePickers() {
     )
     .join("");
 
-  elements.leaveEmployee.innerHTML = options;
   elements.emailEmployee.innerHTML = options;
 
   const selectedId = state.selectedEmployeeId || getEmployees()[0]?.id || "";
-  elements.leaveEmployee.value = selectedId;
   elements.emailEmployee.value = selectedId;
-
-  if (!elements.leaveForm.elements.namedItem("startDate").value) {
-    elements.leaveForm.elements.namedItem("startDate").value = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)
-      .toISOString()
-      .slice(0, 10);
-  }
-
-  if (!elements.leaveForm.elements.namedItem("endDate").value) {
-    elements.leaveForm.elements.namedItem("endDate").value = new Date(Date.now() + 1000 * 60 * 60 * 24 * 9)
-      .toISOString()
-      .slice(0, 10);
-  }
 }
 
 function renderDepartmentCharts() {
@@ -1664,75 +1604,6 @@ async function handleEmployeeDelete() {
     if (elements.employeesDeleteButton && elements.employeesDeleteButton !== elements.deleteEmployeeButton) {
       resetButton(elements.employeesDeleteButton);
     }
-  }
-}
-
-async function handleLeaveCreate(event) {
-  event.preventDefault();
-  const formData = new FormData(elements.leaveForm);
-  const employeeId = formData.get("employeeId");
-
-  if (!employeeId) {
-    setLeaveStatus("Choose an employee for the leave request.", true);
-    return;
-  }
-
-  setButtonBusy(elements.leaveSubmitButton, "Creating...");
-  setLeaveStatus("Creating leave request...");
-
-  try {
-    await requestJson(`/api/employees/${employeeId}/leave-requests`, {
-      method: "POST",
-      body: {
-        startDate: formData.get("startDate"),
-        endDate: formData.get("endDate"),
-        reason: formData.get("reason")
-      }
-    });
-
-    state.selectedEmployeeId = employeeId;
-    elements.leaveForm.reset();
-    setLeaveStatus("Leave request created.");
-    await loadDashboard("Leave request created successfully.");
-    setCurrentPage("management");
-  } catch (error) {
-    setLeaveStatus(error.message, true);
-  } finally {
-    resetButton(elements.leaveSubmitButton);
-  }
-}
-
-async function handleLeaveQueueAction(event) {
-  const button = event.target.closest("[data-leave-action]");
-  if (!button) {
-    return;
-  }
-
-  const note = window.prompt(
-    button.dataset.leaveAction === "Approved"
-      ? "Optional approval note"
-      : "Optional rejection note"
-  );
-
-  setButtonBusy(button, button.dataset.leaveAction === "Approved" ? "Approving..." : "Rejecting...");
-
-  try {
-    await requestJson(
-      `/api/employees/${button.dataset.employeeId}/leave-requests/${button.dataset.requestId}/action`,
-      {
-        method: "POST",
-        body: {
-          status: button.dataset.leaveAction,
-          note: note || ""
-        }
-      }
-    );
-
-    await loadDashboard(`Leave request ${button.dataset.leaveAction.toLowerCase()} successfully.`);
-    setCurrentPage("management");
-  } catch (error) {
-    showFlash(error.message, true);
-    resetButton(button);
   }
 }
 
