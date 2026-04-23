@@ -190,7 +190,6 @@ body::before {
 }
 
 .roster-tools,
-.leave-actions,
 .pagination-row {
   display: flex;
   gap: 12px;
@@ -720,7 +719,6 @@ button {
 .feature-grid,
 .audit-list,
 .salary-insights,
-.leave-queue,
 .side-stack {
   display: grid;
   gap: 12px;
@@ -936,7 +934,6 @@ button {
 }
 
 .detail-history-card,
-.leave-item,
 .chart-card,
 .salary-summary-card {
   padding: 14px;
@@ -954,8 +951,7 @@ button {
 
 .history-row p,
 .salary-item span,
-.chart-top p,
-.leave-identity p {
+.chart-top p {
   margin: 0;
   color: var(--muted);
 }
@@ -967,16 +963,11 @@ button {
   font-size: 0.84rem;
 }
 
-.chart-top,
-.leave-identity {
+.chart-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.leave-identity {
-  justify-content: flex-start;
 }
 
 .email-body {
@@ -1112,9 +1103,7 @@ button {
 
   .roster-tools,
   .pagination-row,
-  .leave-actions,
-  .chart-top,
-  .leave-identity {
+  .chart-top {
     flex-direction: column;
     align-items: stretch;
   }
